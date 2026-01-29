@@ -1,0 +1,162 @@
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      PRAGMA journal_mode = 'wal';
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Categories" (
+          "Id" TEXT NOT NULL CONSTRAINT "PK_Categories" PRIMARY KEY,
+          "Name" TEXT NOT NULL,
+          "Description" TEXT NOT NULL,
+          "CreatedAt" TEXT NOT NULL,
+          "UpdatedAt" TEXT NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Orders" (
+          "Id" TEXT NOT NULL CONSTRAINT "PK_Orders" PRIMARY KEY,
+          "OrderNumber" TEXT NOT NULL,
+          "OrderDate" TEXT NOT NULL,
+          "TotalAmount" decimal(18,2) NOT NULL,
+          "Status" INTEGER NOT NULL,
+          "CreatedAt" TEXT NOT NULL
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "Items" (
+          "Id" TEXT NOT NULL CONSTRAINT "PK_Items" PRIMARY KEY,
+          "CategoryId" TEXT NOT NULL,
+          "Name" TEXT NOT NULL,
+          "Price" decimal(18,2) NOT NULL,
+          "Stock" INTEGER NOT NULL,
+          "CreatedAt" TEXT NOT NULL,
+          "UpdatedAt" TEXT NOT NULL,
+          CONSTRAINT "FK_Items_Categories_CategoryId" FOREIGN KEY ("CategoryId") REFERENCES "Categories" ("Id") ON DELETE CASCADE
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE "OrderItems" (
+          "Id" TEXT NOT NULL CONSTRAINT "PK_OrderItems" PRIMARY KEY,
+          "OrderId" TEXT NOT NULL,
+          "ItemId" TEXT NOT NULL,
+          "Quantity" INTEGER NOT NULL,
+          "Price" decimal(18,2) NOT NULL,
+          CONSTRAINT "FK_OrderItems_Items_ItemId" FOREIGN KEY ("ItemId") REFERENCES "Items" ("Id") ON DELETE RESTRICT,
+          CONSTRAINT "FK_OrderItems_Orders_OrderId" FOREIGN KEY ("OrderId") REFERENCES "Orders" ("Id") ON DELETE CASCADE
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_Items_CategoryId" ON "Items" ("CategoryId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_OrderItems_ItemId" ON "OrderItems" ("ItemId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE INDEX "IX_OrderItems_OrderId" ON "OrderItems" ("OrderId");
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE UNIQUE INDEX "IX_Orders_OrderNumber" ON "Orders" ("OrderNumber");
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /Users/shofyan/dotnet/ecommerce/src/API
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "c"."Id", "c"."CreatedAt", "c"."Description", "c"."Name", "c"."UpdatedAt"
+      FROM "Categories" AS "c"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (Size = 18), @p3='?' (Size = 11), @p4='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Categories" ("Id", "CreatedAt", "Description", "Name", "UpdatedAt")
+      VALUES (@p0, @p1, @p2, @p3, @p4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__get_Item_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "c"."Id", "c"."CreatedAt", "c"."Description", "c"."Name", "c"."UpdatedAt"
+      FROM "Categories" AS "c"
+      WHERE "c"."Id" = @__get_Item_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = DateTime), @p3='?' (Size = 6), @p4='?' (DbType = Decimal), @p5='?' (DbType = Int32), @p6='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Items" ("Id", "CategoryId", "CreatedAt", "Name", "Price", "Stock", "UpdatedAt")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "i"."Id", "i"."CategoryId", "i"."CreatedAt", "i"."Name", "i"."Price", "i"."Stock", "i"."UpdatedAt", "c"."Id", "c"."CreatedAt", "c"."Description", "c"."Name", "c"."UpdatedAt"
+      FROM "Items" AS "i"
+      INNER JOIN "Categories" AS "c" ON "i"."CategoryId" = "c"."Id"
+      WHERE "i"."Id" = @__id_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__prefix_0_rewritten='?' (Size = 12)], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."CreatedAt", "o"."OrderDate", "o"."OrderNumber", "o"."Status", "o"."TotalAmount"
+      FROM "Orders" AS "o"
+      WHERE "o"."OrderNumber" LIKE @__prefix_0_rewritten ESCAPE '\'
+      ORDER BY "o"."OrderNumber" DESC
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__get_Item_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "i"."Id", "i"."CategoryId", "i"."CreatedAt", "i"."Name", "i"."Price", "i"."Stock", "i"."UpdatedAt"
+      FROM "Items" AS "i"
+      WHERE "i"."Id" = @__get_Item_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p6='?' (DbType = Guid), @p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (Size = 6), @p3='?' (DbType = Decimal), @p4='?' (DbType = Int32), @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE "Items" SET "CategoryId" = @p0, "CreatedAt" = @p1, "Name" = @p2, "Price" = @p3, "Stock" = @p4, "UpdatedAt" = @p5
+      WHERE "Id" = @p6
+      RETURNING 1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (Size = 15), @p4='?' (DbType = Int32), @p5='?' (DbType = Decimal)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Orders" ("Id", "CreatedAt", "OrderDate", "OrderNumber", "Status", "TotalAmount")
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Decimal), @p4='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "OrderItems" ("Id", "ItemId", "OrderId", "Price", "Quantity")
+      VALUES (@p0, @p1, @p2, @p3, @p4);
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "t"."Id", "t"."CreatedAt", "t"."OrderDate", "t"."OrderNumber", "t"."Status", "t"."TotalAmount", "t0"."Id", "t0"."ItemId", "t0"."OrderId", "t0"."Price", "t0"."Quantity", "t0"."Id0", "t0"."CategoryId", "t0"."CreatedAt", "t0"."Name", "t0"."Price0", "t0"."Stock", "t0"."UpdatedAt"
+      FROM (
+          SELECT "o"."Id", "o"."CreatedAt", "o"."OrderDate", "o"."OrderNumber", "o"."Status", "o"."TotalAmount"
+          FROM "Orders" AS "o"
+          WHERE "o"."Id" = @__id_0
+          LIMIT 1
+      ) AS "t"
+      LEFT JOIN (
+          SELECT "o0"."Id", "o0"."ItemId", "o0"."OrderId", "o0"."Price", "o0"."Quantity", "i"."Id" AS "Id0", "i"."CategoryId", "i"."CreatedAt", "i"."Name", "i"."Price" AS "Price0", "i"."Stock", "i"."UpdatedAt"
+          FROM "OrderItems" AS "o0"
+          INNER JOIN "Items" AS "i" ON "o0"."ItemId" = "i"."Id"
+      ) AS "t0" ON "t"."Id" = "t0"."OrderId"
+      ORDER BY "t"."Id", "t0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "o"."Id", "o"."CreatedAt", "o"."OrderDate", "o"."OrderNumber", "o"."Status", "o"."TotalAmount"
+      FROM "Orders" AS "o"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__id_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "t"."Id", "t"."CreatedAt", "t"."OrderDate", "t"."OrderNumber", "t"."Status", "t"."TotalAmount", "t0"."Id", "t0"."ItemId", "t0"."OrderId", "t0"."Price", "t0"."Quantity", "t0"."Id0", "t0"."CategoryId", "t0"."CreatedAt", "t0"."Name", "t0"."Price0", "t0"."Stock", "t0"."UpdatedAt"
+      FROM (
+          SELECT "o"."Id", "o"."CreatedAt", "o"."OrderDate", "o"."OrderNumber", "o"."Status", "o"."TotalAmount"
+          FROM "Orders" AS "o"
+          WHERE "o"."Id" = @__id_0
+          LIMIT 1
+      ) AS "t"
+      LEFT JOIN (
+          SELECT "o0"."Id", "o0"."ItemId", "o0"."OrderId", "o0"."Price", "o0"."Quantity", "i"."Id" AS "Id0", "i"."CategoryId", "i"."CreatedAt", "i"."Name", "i"."Price" AS "Price0", "i"."Stock", "i"."UpdatedAt"
+          FROM "OrderItems" AS "o0"
+          INNER JOIN "Items" AS "i" ON "o0"."ItemId" = "i"."Id"
+      ) AS "t0" ON "t"."Id" = "t0"."OrderId"
+      ORDER BY "t"."Id", "t0"."Id"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "c"."Id", "c"."CreatedAt", "c"."Description", "c"."Name", "c"."UpdatedAt"
+      FROM "Categories" AS "c"
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT "i"."Id", "i"."CategoryId", "i"."CreatedAt", "i"."Name", "i"."Price", "i"."Stock", "i"."UpdatedAt"
+      FROM "Items" AS "i"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
