@@ -1,106 +1,106 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace API.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class ItemsController : ControllerBase
+namespace API.Controllers
 {
-    private readonly IItemService _itemService;
-
-    public ItemsController(IItemService itemService)
+    public class ItemsController : Controller
     {
-        _itemService = itemService;
-    }
+        private readonly IItemService _itemService;
+        private readonly ICategoryService _categoryService;
 
-    /// <summary>
-    /// Get all items
-    /// </summary>
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<ItemDto>>> GetAll()
-    {
-        var items = await _itemService.GetAllItemsAsync();
-        return Ok(items);
-    }
-
-    /// <summary>
-    /// Get item by ID
-    /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ItemDto>> GetById(Guid id)
-    {
-        var item = await _itemService.GetItemByIdAsync(id);
-        if (item == null)
-            return NotFound(new { message = $"Item with ID {id} not found." });
-
-        return Ok(item);
-    }
-
-    /// <summary>
-    /// Get items by category ID
-    /// </summary>
-    [HttpGet("category/{categoryId}")]
-    public async Task<ActionResult<IEnumerable<ItemDto>>> GetByCategory(Guid categoryId)
-    {
-        var items = await _itemService.GetItemsByCategoryAsync(categoryId);
-        return Ok(items);
-    }
-
-    /// <summary>
-    /// Create a new item
-    /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<ItemDto>> Create([FromBody] CreateItemDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        try
+        public ItemsController(IItemService itemService, ICategoryService categoryService)
         {
-            var item = await _itemService.CreateItemAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
+            _itemService = itemService;
+            _categoryService = categoryService;
         }
-        catch (InvalidOperationException ex)
+
+        // GET: Items
+        public async Task<IActionResult> Index()
         {
-            return BadRequest(new { message = ex.Message });
+            var items = await _itemService.GetAllItemsAsync();
+            return View(items);
         }
-    }
 
-    /// <summary>
-    /// Update an existing item
-    /// </summary>
-    [HttpPut("{id}")]
-    public async Task<ActionResult<ItemDto>> Update(Guid id, [FromBody] UpdateItemDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        try
+        // GET: Items/Details/5
+        public async Task<IActionResult> Details(Guid id)
         {
-            var item = await _itemService.UpdateItemAsync(id, dto);
+            var item = await _itemService.GetItemByIdAsync(id);
             if (item == null)
-                return NotFound(new { message = $"Item with ID {id} not found." });
-
-            return Ok(item);
+            {
+                return NotFound();
+            }
+            return View(item);
         }
-        catch (InvalidOperationException ex)
+
+        // GET: Items/Create
+        public async Task<IActionResult> Create()
         {
-            return BadRequest(new { message = ex.Message });
+            ViewData["CategoryId"] = new SelectList(await _categoryService.GetAllCategoriesAsync(), "Id", "Name");
+            return View();
         }
-    }
 
-    /// <summary>
-    /// Delete an item
-    /// </summary>
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(Guid id)
-    {
-        var result = await _itemService.DeleteItemAsync(id);
-        if (!result)
-            return NotFound(new { message = $"Item with ID {id} not found." });
+        // POST: Items/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CreateItemDto itemDto)
+        {
+            if (ModelState.IsValid)
+            {
+                await _itemService.CreateItemAsync(itemDto);
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["CategoryId"] = new SelectList(await _categoryService.GetAllCategoriesAsync(), "Id", "Name", itemDto.CategoryId);
+            return View(itemDto);
+        }
 
-        return NoContent();
+        // GET: Items/Edit/5
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var item = await _itemService.GetItemByIdAsync(id);
+            if (item == null)
+            {
+                return NotFound();
+            }
+            var updateDto = new UpdateItemDto { Name = item.Name, Stock = item.Stock, Price = item.Price, CategoryId = item.CategoryId };
+            ViewData["CategoryId"] = new SelectList(await _categoryService.GetAllCategoriesAsync(), "Id", "Name", item.CategoryId);
+            ViewBag.ItemId = id;
+            return View(updateDto);
+        }
+
+        // POST: Items/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, UpdateItemDto itemDto)
+        {
+            if (ModelState.IsValid)
+            {
+                await _itemService.UpdateItemAsync(id, itemDto);
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["CategoryId"] = new SelectList(await _categoryService.GetAllCategoriesAsync(), "Id", "Name", itemDto.CategoryId);
+            return View(itemDto);
+        }
+
+        // GET: Items/Delete/5
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var item = await _itemService.GetItemByIdAsync(id);
+            if (item == null)
+            {
+                return NotFound();
+            }
+            return View(item);
+        }
+
+        // POST: Items/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            await _itemService.DeleteItemAsync(id);
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

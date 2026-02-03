@@ -2,125 +2,216 @@ using Application.DTOs;
 using Application.Interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Text.Json;
 
-namespace API.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class OrdersController : ControllerBase
+namespace API.Controllers
 {
-    private readonly IOrderService _orderService;
-
-    public OrdersController(IOrderService orderService)
+    public class OrdersController : Controller
     {
-        _orderService = orderService;
-    }
+        private readonly IOrderService _orderService;
+        private readonly IItemService _itemService;
 
-    /// <summary>
-    /// Get all orders
-    /// </summary>
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<OrderDto>>> GetAll()
-    {
-        var orders = await _orderService.GetAllOrdersAsync();
-        return Ok(orders);
-    }
-
-    /// <summary>
-    /// Get order by ID
-    /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<OrderDto>> GetById(Guid id)
-    {
-        var order = await _orderService.GetOrderByIdAsync(id);
-        if (order == null)
-            return NotFound(new { message = $"Order with ID {id} not found." });
-
-        return Ok(order);
-    }
-
-    /// <summary>
-    /// Get order by order number
-    /// </summary>
-    [HttpGet("number/{orderNumber}")]
-    public async Task<ActionResult<OrderDto>> GetByOrderNumber(string orderNumber)
-    {
-        var order = await _orderService.GetOrderByOrderNumberAsync(orderNumber);
-        if (order == null)
-            return NotFound(new { message = $"Order with number {orderNumber} not found." });
-
-        return Ok(order);
-    }
-
-    /// <summary>
-    /// Get orders by status
-    /// </summary>
-    [HttpGet("status/{status}")]
-    public async Task<ActionResult<IEnumerable<OrderDto>>> GetByStatus(OrderStatus status)
-    {
-        var orders = await _orderService.GetOrdersByStatusAsync(status);
-        return Ok(orders);
-    }
-
-    /// <summary>
-    /// Create a new order
-    /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<OrderDto>> Create([FromBody] CreateOrderDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        try
+        public OrdersController(IOrderService orderService, IItemService itemService)
         {
-            var order = await _orderService.CreateOrderAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+            _orderService = orderService;
+            _itemService = itemService;
         }
-        catch (InvalidOperationException ex)
+
+        // GET: Orders
+        public async Task<IActionResult> Index()
         {
-            return BadRequest(new { message = ex.Message });
+            var orders = await _orderService.GetAllOrdersAsync();
+            return View(orders);
         }
-    }
 
-    /// <summary>
-    /// Update order status
-    /// </summary>
-    [HttpPatch("{id}/status")]
-    public async Task<ActionResult<OrderDto>> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        // GET: Orders/Details/5
+        public async Task<IActionResult> Details(Guid id)
+        {
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+            return View(order);
+        }
 
-        var order = await _orderService.UpdateOrderStatusAsync(id, dto);
-        if (order == null)
-            return NotFound(new { message = $"Order with ID {id} not found." });
+        // GET: Orders/Create
+        public async Task<IActionResult> Create()
+        {
+            var items = await _itemService.GetAllItemsAsync();
+            ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
+            {
+                Value = i.Id.ToString(),
+                Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+            }).ToList();
+            return View();
+        }
 
-        return Ok(order);
-    }
+        // POST: Orders/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(List<Guid> ItemIds, List<int> Quantities)
+        {
+            if (ItemIds == null || ItemIds.Count == 0 || Quantities == null || Quantities.Count == 0)
+            {
+                ModelState.AddModelError("", "Please add at least one item to the order.");
+                var items = await _itemService.GetAllItemsAsync();
+                ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
+                {
+                    Value = i.Id.ToString(),
+                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                }).ToList();
+                return View();
+            }
 
-    /// <summary>
-    /// Cancel an order
-    /// </summary>
-    [HttpPost("{id}/cancel")]
-    public async Task<ActionResult> Cancel(Guid id)
-    {
-        var result = await _orderService.CancelOrderAsync(id);
-        if (!result)
-            return NotFound(new { message = $"Order with ID {id} not found or already cancelled." });
+            try
+            {
+                var orderItems = new List<CreateOrderItemDto>();
+                for (int i = 0; i < ItemIds.Count; i++)
+                {
+                    if (Quantities[i] > 0)
+                    {
+                        orderItems.Add(new CreateOrderItemDto
+                        {
+                            ItemId = ItemIds[i],
+                            Quantity = Quantities[i]
+                        });
+                    }
+                }
 
-        return Ok(new { message = "Order cancelled successfully." });
-    }
+                if (orderItems.Count == 0)
+                {
+                    ModelState.AddModelError("", "Please add at least one item with quantity greater than 0.");
+                    var items = await _itemService.GetAllItemsAsync();
+                    ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
+                    {
+                        Value = i.Id.ToString(),
+                        Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                    }).ToList();
+                    return View();
+                }
 
-    /// <summary>
-    /// Delete an order
-    /// </summary>
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(Guid id)
-    {
-        var result = await _orderService.DeleteOrderAsync(id);
-        if (!result)
-            return NotFound(new { message = $"Order with ID {id} not found." });
+                var orderDto = new CreateOrderDto { OrderItems = orderItems };
+                await _orderService.CreateOrderAsync(orderDto);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                var items = await _itemService.GetAllItemsAsync();
+                ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
+                {
+                    Value = i.Id.ToString(),
+                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                }).ToList();
+                return View();
+            }
+        }
 
-        return NoContent();
+        // GET: Orders/Edit/5
+        public async Task<IActionResult> Edit(Guid id)
+        {
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            var items = await _itemService.GetAllItemsAsync();
+            ViewBag.Items = items.Select(i => new SelectListItem
+            {
+                Value = i.Id.ToString(),
+                Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+            }).ToList();
+            ViewBag.OrderId = id;
+
+            return View(order);
+        }
+
+        // POST: Orders/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Guid id, OrderStatus Status, List<Guid> OrderItemIds, List<Guid> ItemIds, List<int> Quantities)
+        {
+            try
+            {
+                var orderItems = new List<UpdateOrderItemDto>();
+
+                if (ItemIds != null && Quantities != null)
+                {
+                    for (int i = 0; i < ItemIds.Count; i++)
+                    {
+                        if (Quantities[i] > 0)
+                        {
+                            orderItems.Add(new UpdateOrderItemDto
+                            {
+                                Id = (OrderItemIds != null && i < OrderItemIds.Count && OrderItemIds[i] != Guid.Empty)
+                                    ? OrderItemIds[i]
+                                    : null,
+                                ItemId = ItemIds[i],
+                                Quantity = Quantities[i]
+                            });
+                        }
+                    }
+                }
+
+                if (orderItems.Count == 0 && Status != Domain.Enums.OrderStatus.CANCELLED)
+                {
+                    ModelState.AddModelError("", "Order must have at least one item.");
+                    var order = await _orderService.GetOrderByIdAsync(id);
+                    var items = await _itemService.GetAllItemsAsync();
+                    ViewBag.Items = items.Select(i => new SelectListItem
+                    {
+                        Value = i.Id.ToString(),
+                        Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                    }).ToList();
+                    ViewBag.OrderId = id;
+                    return View(order);
+                }
+
+                var updateDto = new UpdateOrderDto
+                {
+                    Status = Status,
+                    OrderItems = orderItems
+                };
+
+                await _orderService.UpdateOrderAsync(id, updateDto);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                var order = await _orderService.GetOrderByIdAsync(id);
+                var items = await _itemService.GetAllItemsAsync();
+                ViewBag.Items = items.Select(i => new SelectListItem
+                {
+                    Value = i.Id.ToString(),
+                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                }).ToList();
+                ViewBag.OrderId = id;
+                return View(order);
+            }
+        }
+
+        // GET: Orders/Delete/5
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+            return View(order);
+        }
+
+        // POST: Orders/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        {
+            await _orderService.DeleteOrderAsync(id);
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

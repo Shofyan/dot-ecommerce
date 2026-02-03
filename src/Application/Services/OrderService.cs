@@ -156,6 +156,126 @@ public class OrderService : IOrderService
         return true;
     }
 
+    public async Task<OrderDto?> UpdateOrderAsync(Guid id, UpdateOrderDto dto)
+    {
+        var order = await _unitOfWork.Orders.GetByIdWithItemsAsync(id);
+        if (order == null)
+            return null;
+
+        var previousStatus = order.Status;
+
+        // If changing to CANCELLED, restore stock for all existing items
+        if (dto.Status == OrderStatus.CANCELLED && previousStatus != OrderStatus.CANCELLED)
+        {
+            foreach (var existingItem in order.OrderItems)
+            {
+                var item = await _unitOfWork.Items.GetByIdAsync(existingItem.ItemId);
+                if (item != null)
+                {
+                    item.Stock += existingItem.Quantity;
+                    item.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Items.UpdateAsync(item);
+                }
+            }
+
+            // Delete all order items
+            foreach (var existingItem in order.OrderItems.ToList())
+            {
+                await _unitOfWork.OrderItems.DeleteAsync(existingItem.Id);
+            }
+
+            order.Status = OrderStatus.CANCELLED;
+            order.TotalAmount = 0;
+            await _unitOfWork.Orders.UpdateAsync(order);
+            await _unitOfWork.SaveChangesAsync();
+            return await GetOrderByIdAsync(order.Id);
+        }
+
+        // Cannot edit a cancelled order
+        if (previousStatus == OrderStatus.CANCELLED)
+            throw new InvalidOperationException("Cannot edit a cancelled order.");
+
+        // Get existing order item IDs
+        var existingOrderItemIds = order.OrderItems.Select(oi => oi.Id).ToHashSet();
+        var newOrderItemIds = dto.OrderItems.Where(oi => oi.Id.HasValue).Select(oi => oi.Id!.Value).ToHashSet();
+
+        // Restore stock for removed items
+        foreach (var existingItem in order.OrderItems)
+        {
+            if (!newOrderItemIds.Contains(existingItem.Id))
+            {
+                var item = await _unitOfWork.Items.GetByIdAsync(existingItem.ItemId);
+                if (item != null)
+                {
+                    item.Stock += existingItem.Quantity;
+                    item.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Items.UpdateAsync(item);
+                }
+                await _unitOfWork.OrderItems.DeleteAsync(existingItem.Id);
+            }
+        }
+
+        decimal totalAmount = 0;
+
+        // Process each order item from dto
+        foreach (var itemDto in dto.OrderItems)
+        {
+            var item = await _unitOfWork.Items.GetByIdAsync(itemDto.ItemId);
+            if (item == null)
+                throw new InvalidOperationException($"Item with ID {itemDto.ItemId} does not exist.");
+
+            if (itemDto.Id.HasValue && existingOrderItemIds.Contains(itemDto.Id.Value))
+            {
+                // Update existing order item
+                var existingOrderItem = order.OrderItems.First(oi => oi.Id == itemDto.Id.Value);
+                var quantityDiff = itemDto.Quantity - existingOrderItem.Quantity;
+
+                if (quantityDiff > 0 && item.Stock < quantityDiff)
+                    throw new InvalidOperationException($"Insufficient stock for item {item.Name}. Available: {item.Stock}, Additional needed: {quantityDiff}");
+
+                // Adjust stock
+                item.Stock -= quantityDiff;
+                item.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Items.UpdateAsync(item);
+
+                existingOrderItem.Quantity = itemDto.Quantity;
+                existingOrderItem.Price = item.Price;
+                await _unitOfWork.OrderItems.UpdateAsync(existingOrderItem);
+
+                totalAmount += existingOrderItem.Price * existingOrderItem.Quantity;
+            }
+            else
+            {
+                // Add new order item
+                if (item.Stock < itemDto.Quantity)
+                    throw new InvalidOperationException($"Insufficient stock for item {item.Name}. Available: {item.Stock}, Requested: {itemDto.Quantity}");
+
+                var newOrderItem = new OrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = order.Id,
+                    ItemId = item.Id,
+                    Quantity = itemDto.Quantity,
+                    Price = item.Price
+                };
+
+                item.Stock -= itemDto.Quantity;
+                item.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Items.UpdateAsync(item);
+
+                await _unitOfWork.OrderItems.AddAsync(newOrderItem);
+                totalAmount += newOrderItem.Price * newOrderItem.Quantity;
+            }
+        }
+
+        order.Status = dto.Status;
+        order.TotalAmount = totalAmount;
+        await _unitOfWork.Orders.UpdateAsync(order);
+        await _unitOfWork.SaveChangesAsync();
+
+        return await GetOrderByIdAsync(order.Id);
+    }
+
     public async Task<bool> DeleteOrderAsync(Guid id)
     {
         var exists = await _unitOfWork.Orders.ExistsAsync(id);

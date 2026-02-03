@@ -1,0 +1,185 @@
+@{
+    ViewData["Title"] = "Create Order";
+    var items = ViewBag.Items as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+}
+
+<h1>Create Order</h1>
+
+<h4>New Order</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <strong>Order Items</strong>
+                </div>
+                <div class="card-body">
+                    <div id="order-items-container">
+                        <!-- Order items will be added here dynamically -->
+                    </div>
+
+                    <button type="button" class="btn btn-success mt-2" id="add-item-btn">
+                        <i class="fas fa-plus"></i> + Add Item
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <strong>Order Summary</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Items:</strong> <span id="total-items">0</span></p>
+                    <p><strong>Estimated Total:</strong> <span id="estimated-total">$0.00</span></p>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Create Order" class="btn btn-primary btn-lg" />
+                <a asp-action="Index" class="btn btn-secondary btn-lg ml-2">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Item Row Template -->
+<template id="item-row-template">
+    <div class="order-item-row border rounded p-3 mb-2 bg-light">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label class="control-label">Item</label>
+                <select name="ItemIds" class="form-control item-select" required>
+                    <option value="">-- Select Item --</option>
+                    @if (items != null)
+                    {
+                        @foreach (var item in items)
+                        {
+                            <option value="@item.Value" data-price="@GetItemPrice(item.Text)">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="control-label">Quantity</label>
+                <input type="number" name="Quantities" class="form-control quantity-input" min="1" value="1" required />
+            </div>
+            <div class="col-md-2">
+                <label class="control-label">Subtotal</label>
+                <p class="form-control-plaintext subtotal">$0.00</p>
+            </div>
+            <div class="col-md-1">
+                <label class="control-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm remove-item-btn d-block">✕</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('order-items-container');
+            const addBtn = document.getElementById('add-item-btn');
+            const template = document.getElementById('item-row-template');
+
+            // Add first item row by default
+            addItemRow();
+
+            addBtn.addEventListener('click', function () {
+                addItemRow();
+            });
+
+            function addItemRow() {
+                const clone = template.content.cloneNode(true);
+                container.appendChild(clone);
+
+                // Attach event listeners to new row
+                const rows = container.querySelectorAll('.order-item-row');
+                const newRow = rows[rows.length - 1];
+
+                newRow.querySelector('.remove-item-btn').addEventListener('click', function () {
+                    if (container.querySelectorAll('.order-item-row').length > 1) {
+                        newRow.remove();
+                        updateSummary();
+                    } else {
+                        alert('Order must have at least one item.');
+                    }
+                });
+
+                newRow.querySelector('.item-select').addEventListener('change', function () {
+                    updateRowSubtotal(newRow);
+                    updateSummary();
+                });
+
+                newRow.querySelector('.quantity-input').addEventListener('input', function () {
+                    updateRowSubtotal(newRow);
+                    updateSummary();
+                });
+
+                updateSummary();
+            }
+
+            function updateRowSubtotal(row) {
+                const select = row.querySelector('.item-select');
+                const quantity = parseInt(row.querySelector('.quantity-input').value) || 0;
+                const selectedOption = select.options[select.selectedIndex];
+                const priceText = selectedOption.dataset.price || '0';
+                const price = parseFloat(priceText) || 0;
+                const subtotal = price * quantity;
+                row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+            }
+
+            function updateSummary() {
+                const rows = container.querySelectorAll('.order-item-row');
+                let totalItems = 0;
+                let totalAmount = 0;
+
+                rows.forEach(function (row) {
+                    const quantity = parseInt(row.querySelector('.quantity-input').value) || 0;
+                    const select = row.querySelector('.item-select');
+                    const selectedOption = select.options[select.selectedIndex];
+                    const priceText = selectedOption.dataset.price || '0';
+                    const price = parseFloat(priceText) || 0;
+
+                    if (select.value && quantity > 0) {
+                        totalItems += quantity;
+                        totalAmount += price * quantity;
+                    }
+                });
+
+                document.getElementById('total-items').textContent = totalItems;
+                document.getElementById('estimated-total').textContent = '$' + totalAmount.toFixed(2);
+            }
+        });
+    </script>
+}
+
+@functions {
+    string GetItemPrice(string text)
+    {
+        // Extract price from text like "Item Name - $99.99 (Stock: 10)"
+        try
+        {
+            var parts = text.Split('-');
+            if (parts.Length >= 2)
+            {
+                var pricePart = parts[1].Trim();
+                var priceMatch = System.Text.RegularExpressions.Regex.Match(pricePart, @"[\$€£]?([\d,]+\.?\d*)");
+                if (priceMatch.Success)
+                {
+                    return priceMatch.Groups[1].Value.Replace(",", "");
+                }
+            }
+        }
+        catch { }
+        return "0";
+    }
+}

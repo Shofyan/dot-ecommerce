@@ -22,3 +22,16 @@ public class UpdateOrderStatusDto
 {
     public OrderStatus Status { get; set; }
 }
+
+public class UpdateOrderDto
+{
+    public OrderStatus Status { get; set; }
+    public List<UpdateOrderItemDto> OrderItems { get; set; } = new();
+}
+
+public class UpdateOrderItemDto
+{
+    public Guid? Id { get; set; } // null for new items
+    public Guid ItemId { get; set; }
+    public int Quantity { get; set; }
+}
