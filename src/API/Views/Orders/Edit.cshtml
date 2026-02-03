@@ -82,11 +82,11 @@
                                     </div>
                                     <div class="col-md-2">
                                         <label class="control-label">Unit Price</label>
-                                        <p class="form-control-plaintext unit-price">@orderItem.Price.ToString("C")</p>
+                                        <p class="form-control-plaintext unit-price">@orderItem.Price.ToRupiah()</p>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="control-label">Subtotal</label>
-                                        <p class="form-control-plaintext subtotal">@orderItem.Subtotal.ToString("C")</p>
+                                        <p class="form-control-plaintext subtotal">@orderItem.Subtotal.ToRupiah()</p>
                                     </div>
                                     <div class="col-md-1">
                                         <label class="control-label">&nbsp;</label>
@@ -111,7 +111,7 @@
                 <div class="card-body">
                     <p><strong>Total Items:</strong> <span id="total-items">@Model.OrderItems.Sum(x =>
                                                         x.Quantity)</span></p>
-                    <p><strong>Total Amount:</strong> <span id="estimated-total">@Model.TotalAmount.ToString("C")</span>
+                    <p><strong>Total Amount:</strong> <span id="estimated-total">@Model.TotalAmount.ToRupiah()</span>
                     </p>
                 </div>
             </div>
@@ -148,11 +148,11 @@
             </div>
             <div class="col-md-2">
                 <label class="control-label">Unit Price</label>
-                <p class="form-control-plaintext unit-price">$0.00</p>
+                <p class="form-control-plaintext unit-price">Rp 0</p>
             </div>
             <div class="col-md-2">
                 <label class="control-label">Subtotal</label>
-                <p class="form-control-plaintext subtotal">$0.00</p>
+                <p class="form-control-plaintext subtotal">Rp 0</p>
             </div>
             <div class="col-md-1">
                 <label class="control-label">&nbsp;</label>
@@ -231,8 +231,8 @@
                 const priceText = selectedOption.dataset.price || '0';
                 const price = parseFloat(priceText) || 0;
                 const subtotal = price * quantity;
-                row.querySelector('.unit-price').textContent = '$' + price.toFixed(2);
-                row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+                row.querySelector('.unit-price').textContent = 'Rp ' + price.toLocaleString('id-ID');
+                row.querySelector('.subtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
             }
 
             function updateSummary() {
@@ -254,7 +254,7 @@
                 });
 
                 document.getElementById('total-items').textContent = totalItems;
-                document.getElementById('estimated-total').textContent = '$' + totalAmount.toFixed(2);
+                document.getElementById('estimated-total').textContent = 'Rp ' + totalAmount.toLocaleString('id-ID');
             }
 
             // Initial summary update

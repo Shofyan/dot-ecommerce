@@ -9,6 +9,7 @@ namespace API.Controllers
     {
         private readonly IItemService _itemService;
         private readonly ICategoryService _categoryService;
+        private const int PageSize = 10;
 
         public ItemsController(IItemService itemService, ICategoryService categoryService)
         {
@@ -17,10 +18,21 @@ namespace API.Controllers
         }
 
         // GET: Items
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var items = await _itemService.GetAllItemsAsync();
-            return View(items);
+            var allItems = (await _itemService.GetAllItemsAsync()).ToList();
+            var totalCount = allItems.Count;
+            var items = allItems.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+
+            var pagedResult = new PagedResult<ItemDto>
+            {
+                Items = items,
+                PageNumber = page,
+                PageSize = PageSize,
+                TotalCount = totalCount
+            };
+
+            return View(pagedResult);
         }
 
         // GET: Items/Details/5

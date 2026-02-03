@@ -1,8 +1,288 @@
+@model API.ViewModels.DashboardViewModel
+@using API.Helpers
+
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Welcome to the E-Commerce application. Use the navigation bar to manage categories, items, and orders.</p>
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2" style="border-left: 4px solid #4e73df;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Categories
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalCategories</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-folder fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+                <a href="/Categories" class="card-footer text-center small text-primary">View Details →</a>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2" style="border-left: 4px solid #1cc88a;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Items</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalItems</div>
+                            <small class="text-muted">@Model.TotalItemsInStock units in stock</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+                <a href="/Items" class="card-footer text-center small text-success">View Details →</a>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2" style="border-left: 4px solid #36b9cc;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Orders</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalOrders</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+                <a href="/Orders" class="card-footer text-center small text-info">View Details →</a>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2" style="border-left: 4px solid #f6c23e;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Revenue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalRevenue.ToRupiah()</div>
+                            <small class="text-muted">From @Model.PaidOrders paid orders</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Status Cards -->
+    <div class="row">
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card bg-warning text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Pending Orders</h6>
+                            <h2 class="mb-0">@Model.PendingOrders</h2>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Paid Orders</h6>
+                            <h2 class="mb-0">@Model.PaidOrders</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Cancelled Orders</h6>
+                            <h2 class="mb-0">@Model.CancelledOrders</h2>
+                        </div>
+                        <i class="fas fa-times-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders & Top Items -->
+    <div class="row">
+        <!-- Recent Orders -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+                    <h6 class="m-0 font-weight-bold">Recent Orders</h6>
+                    <a href="/Orders" class="btn btn-light btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.RecentOrders)
+                                {
+                                    <tr>
+                                        <td><a href="/Orders/Details/@order.Id">@order.OrderNumber</a></td>
+                                        <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                        <td>@order.TotalAmount.ToRupiah()</td>
+                                        <td><span class="badge @order.StatusBadgeClass">@order.Status</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Items by Stock -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">Top Items by Stock</h6>
+                    <a href="/Items" class="btn btn-light btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.TopItems)
+                                {
+                                    <tr>
+                                        <td><a href="/Items/Details/@item.Id">@item.Name</a></td>
+                                        <td>@item.CategoryName</td>
+                                        <td>@item.Price.ToRupiah()</td>
+                                        <td><span class="badge badge-info">@item.Stock</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Summary -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">Top Categories by Item Count</h6>
+                    <a href="/Categories" class="btn btn-light btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var category in Model.CategorySummaries)
+                        {
+                            <div class="col-md-4 col-lg-2 mb-3">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title mb-1">@category.Name</h6>
+                                        <p class="card-text">
+                                            <span class="badge badge-primary badge-pill">@category.ItemCount items</span>
+                                        </p>
+                                        <a href="/Categories/Details/@category.Id"
+                                            class="btn btn-sm btn-outline-primary">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="/Categories/Create" class="btn btn-primary btn-lg btn-block">
+                                <i class="fas fa-plus-circle"></i> Add Category
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="/Items/Create" class="btn btn-success btn-lg btn-block">
+                                <i class="fas fa-plus-circle"></i> Add Item
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="/Orders/Create" class="btn btn-info btn-lg btn-block">
+                                <i class="fas fa-plus-circle"></i> Create Order
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="/Orders" class="btn btn-warning btn-lg btn-block">
+                                <i class="fas fa-list"></i> View All Orders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .opacity-50 {
+        opacity: 0.5;
+    }
+
+    .card-footer {
+        background-color: rgba(0, 0, 0, 0.03);
+        text-decoration: none;
+    }
+
+    .card-footer:hover {
+        background-color: rgba(0, 0, 0, 0.075);
+    }
+
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+</style>

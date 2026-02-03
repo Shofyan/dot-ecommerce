@@ -1,0 +1,53 @@
+@model dynamic
+
+@{
+    var pageNumber = (int)Model.PageNumber;
+    var totalPages = (int)Model.TotalPages;
+    var hasPreviousPage = (bool)Model.HasPreviousPage;
+    var hasNextPage = (bool)Model.HasNextPage;
+    var totalCount = (int)Model.TotalCount;
+}
+
+@if (totalPages > 1)
+{
+    <nav aria-label="Page navigation">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                Showing page @pageNumber of @totalPages (@totalCount total records)
+            </div>
+            <ul class="pagination mb-0">
+                <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="1">First</a>
+                </li>
+                <li class="page-item @(!hasPreviousPage ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@(pageNumber - 1)">Previous</a>
+                </li>
+
+                @{
+                    var startPage = Math.Max(1, pageNumber - 2);
+                    var endPage = Math.Min(totalPages, pageNumber + 2);
+                }
+
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    <li class="page-item @(i == pageNumber ? "active" : "")">
+                        <a class="page-link" asp-route-page="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(!hasNextPage ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@(pageNumber + 1)">Next</a>
+                </li>
+                <li class="page-item @(!hasNextPage ? "disabled" : "")">
+                    <a class="page-link" asp-route-page="@totalPages">Last</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+}
+else if (totalCount > 0)
+{
+    <div class="text-muted">
+        Showing @totalCount record(s)
+    </div>
+}

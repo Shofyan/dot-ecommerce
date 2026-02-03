@@ -34,7 +34,7 @@
                 </div>
                 <div class="card-body">
                     <p><strong>Total Items:</strong> <span id="total-items">0</span></p>
-                    <p><strong>Estimated Total:</strong> <span id="estimated-total">$0.00</span></p>
+                    <p><strong>Estimated Total:</strong> <span id="estimated-total">Rp 0</span></p>
                 </div>
             </div>
 
@@ -69,7 +69,7 @@
             </div>
             <div class="col-md-2">
                 <label class="control-label">Subtotal</label>
-                <p class="form-control-plaintext subtotal">$0.00</p>
+                <p class="form-control-plaintext subtotal">Rp 0</p>
             </div>
             <div class="col-md-1">
                 <label class="control-label">&nbsp;</label>
@@ -134,7 +134,7 @@
                 const priceText = selectedOption.dataset.price || '0';
                 const price = parseFloat(priceText) || 0;
                 const subtotal = price * quantity;
-                row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+                row.querySelector('.subtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
             }
 
             function updateSummary() {
@@ -156,7 +156,7 @@
                 });
 
                 document.getElementById('total-items').textContent = totalItems;
-                document.getElementById('estimated-total').textContent = '$' + totalAmount.toFixed(2);
+                document.getElementById('estimated-total').textContent = 'Rp ' + totalAmount.toLocaleString('id-ID');
             }
         });
     </script>

@@ -11,32 +11,33 @@
     <h4>Order</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.OrderNumber)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.OrderNumber)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.OrderDate)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.OrderDate)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.TotalAmount)
         </dt>
-        <dd class = "col-sm-10">
-            @Model.TotalAmount.ToString("C")
+        <dd class="col-sm-10">
+            @Model.TotalAmount.ToRupiah()
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Status)
         </dt>
-        <dd class = "col-sm-10">
-            <span class="badge @(Model.Status == Domain.Enums.OrderStatus.PAID ? "badge-success" : Model.Status == Domain.Enums.OrderStatus.CANCELLED ? "badge-danger" : "badge-warning")">@Model.Status</span>
+        <dd class="col-sm-10">
+            <span
+                class="badge @(Model.Status == Domain.Enums.OrderStatus.PAID ? "badge-success" : Model.Status == Domain.Enums.OrderStatus.CANCELLED ? "badge-danger" : "badge-warning")">@Model.Status</span>
         </dd>
     </dl>
-    
+
     <form asp-action="Delete">
         <input type="hidden" asp-for="Id" />
         <input type="submit" value="Delete" class="btn btn-danger" /> |

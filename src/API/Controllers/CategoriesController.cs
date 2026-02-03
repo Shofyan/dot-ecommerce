@@ -7,6 +7,7 @@ namespace API.Controllers
     public class CategoriesController : Controller
     {
         private readonly ICategoryService _categoryService;
+        private const int PageSize = 10;
 
         public CategoriesController(ICategoryService categoryService)
         {
@@ -14,10 +15,21 @@ namespace API.Controllers
         }
 
         // GET: Categories
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var categories = await _categoryService.GetAllCategoriesAsync();
-            return View(categories);
+            var allCategories = (await _categoryService.GetAllCategoriesAsync()).ToList();
+            var totalCount = allCategories.Count;
+            var categories = allCategories.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+
+            var pagedResult = new PagedResult<CategoryDto>
+            {
+                Items = categories,
+                PageNumber = page,
+                PageSize = PageSize,
+                TotalCount = totalCount
+            };
+
+            return View(pagedResult);
         }
 
         // GET: Categories/Details/5

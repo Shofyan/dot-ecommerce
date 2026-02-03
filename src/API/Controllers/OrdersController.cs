@@ -4,6 +4,7 @@ using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Text.Json;
+using API.Helpers;
 
 namespace API.Controllers
 {
@@ -11,6 +12,7 @@ namespace API.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly IItemService _itemService;
+        private const int PageSize = 10;
 
         public OrdersController(IOrderService orderService, IItemService itemService)
         {
@@ -19,10 +21,21 @@ namespace API.Controllers
         }
 
         // GET: Orders
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var orders = await _orderService.GetAllOrdersAsync();
-            return View(orders);
+            var allOrders = (await _orderService.GetAllOrdersAsync()).ToList();
+            var totalCount = allOrders.Count;
+            var orders = allOrders.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+
+            var pagedResult = new PagedResult<OrderDto>
+            {
+                Items = orders,
+                PageNumber = page,
+                PageSize = PageSize,
+                TotalCount = totalCount
+            };
+
+            return View(pagedResult);
         }
 
         // GET: Orders/Details/5
@@ -43,7 +56,7 @@ namespace API.Controllers
             ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
             {
                 Value = i.Id.ToString(),
-                Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
             }).ToList();
             return View();
         }
@@ -60,7 +73,7 @@ namespace API.Controllers
                 ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
                 {
                     Value = i.Id.ToString(),
-                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                    Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
                 }).ToList();
                 return View();
             }
@@ -87,7 +100,7 @@ namespace API.Controllers
                     ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
                     {
                         Value = i.Id.ToString(),
-                        Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                        Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
                     }).ToList();
                     return View();
                 }
@@ -103,7 +116,7 @@ namespace API.Controllers
                 ViewBag.Items = items.Where(i => i.Stock > 0).Select(i => new SelectListItem
                 {
                     Value = i.Id.ToString(),
-                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                    Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
                 }).ToList();
                 return View();
             }
@@ -122,7 +135,7 @@ namespace API.Controllers
             ViewBag.Items = items.Select(i => new SelectListItem
             {
                 Value = i.Id.ToString(),
-                Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
             }).ToList();
             ViewBag.OrderId = id;
 
@@ -164,7 +177,7 @@ namespace API.Controllers
                     ViewBag.Items = items.Select(i => new SelectListItem
                     {
                         Value = i.Id.ToString(),
-                        Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                        Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
                     }).ToList();
                     ViewBag.OrderId = id;
                     return View(order);
@@ -187,7 +200,7 @@ namespace API.Controllers
                 ViewBag.Items = items.Select(i => new SelectListItem
                 {
                     Value = i.Id.ToString(),
-                    Text = $"{i.Name} - {i.Price:C} (Stock: {i.Stock})"
+                    Text = $"{i.Name} - {i.Price.ToRupiah()} (Stock: {i.Stock})"
                 }).ToList();
                 ViewBag.OrderId = id;
                 return View(order);
